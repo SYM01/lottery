@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+        <br>
+        <div class="row">
+            <div class="col col-md-4">
+                <h2>待抽奖用户</h2>
+                <div class="row">
+                   <form class="form-inline" method="POST" action="{{ url_for('.new_user') }}">
+                        <div class="form-group mb-2">
+                            <input type="text" class="form-control" id="form-name" name="name" placeholder="姓名" required pattern="^[^\s]+$">
+                        </div>
+                        <button type="submit" class="btn btn-primary mb-2">添加</button>
+                    </form>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">用户</th>
+                        <th scope="col">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {%- for row in candicates %}
+                        <tr data-user="{{ row | e }}">
+                        <td>{{ loop.index }}</td>
+                        <td>{{ row }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger btn-del-user">删除</button>
+                        </td>
+                        </tr>
+                        {%- endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="col col-md-8">
+                <h2>中奖用户</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                        <th scope="col">奖品编号</th>
+                        <th scope="col">奖品名称</th>
+                        <th scope="col">用户</th>
+                        <th scope="col">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {%- for row in winners %}
+                        <tr data-raw="{{ row | tojson | forceescape }}">
+                        <th scope="row">{{ row['id'] }}</th>
+                        <td>{{ row['gname'] }}</td>
+                        <td>{{ row['uname'] }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger btn-del-winner">撤销</button>
+                        </td>
+                        </tr>
+                        {%- endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+    <script>
+    $('.btn-del-user').click(function() {
+        let $ele = $(this).parents('tr'), name = $ele.data('user');
+        if (!confirm('确定删除【' + name + '】?')) {
+            return
+        }
+        let form = new FormData();
+        form.append('name', name);
+
+        fetch("{{ url_for('.del_user') }}", {
+            method: 'DELETE',
+            cache: 'no-cache',
+            body: form
+        }).then(resp=>resp.json()).then(data=>{
+            if (data.suc) {
+                $ele.remove();
+            } else {
+                alert('删除失败');
+            }
+        }).catch(err=>{
+            alert(err);
+        })
+    });
+    $('.btn-del-winner').click(function() {
+        let $ele = $(this).parents('tr'), data = $ele.data('raw');
+        if (!confirm(`确定撤销【${data.uname}】的【${data.gname}】奖品?`)) {
+            return
+        }
+        let form = new FormData();
+        form.append('id', data.id);
+        form.append('name', data.uname);
+
+        fetch("{{ url_for('.del_winner') }}", {
+            method: 'DELETE',
+            cache: 'no-cache',
+            body: form
+        }).then(resp=>resp.json()).then(data=>{
+            if (data.suc) {
+                location.reload();
+            } else {
+                alert('撤销失败');
+            }
+        }).catch(err=>{
+            alert(err);
+        })
+    });
+    </script>
+{% endblock %}

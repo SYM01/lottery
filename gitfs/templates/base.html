@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>抽奖</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">360华东分区抽奖</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbar-main">
+            <ul class="navbar-nav mr-auto">
+            <li class="nav-item{% if url_for('.index') == request.path %} active{% endif %}">
+                <a class="nav-link" href="{{ url_for('.index') }}">奖品</a>
+            </li>
+            <li class="nav-item{% if url_for('.users') == request.path %} active{% endif %}">
+                    <a class="nav-link" href="{{ url_for('.users') }}">用户</a>
+                </li>
+            <li class="nav-item{% if url_for('.show') == request.path %} active{% endif %}">
+                <a class="nav-link" href="{{ url_for('.show') }}">公示</a>
+            </li>
+            </ul>
+        </div>
+    </nav>
+
+    {% block content %}
+    {% endblock %}
+
+    <script src="{{ url_for('static', filename='jquery-3.3.1.slim.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+    {% block script %}
+    {% endblock %}
+</body>
+</html>

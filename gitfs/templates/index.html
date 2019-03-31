@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+        <br>
+        <p>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#editModel">新增奖品</button>
+        </p>
+        
+
+        <p>
+            <table class="table">
+                <thead>
+                    <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">奖品名称</th>
+                    <th scope="col">奖品来源</th>
+                    <th scope="col">中奖人数/总人数</th>
+                    <th scope="col">单次抽奖人数</th>
+                    <th scope="col">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {%- for row in data %}
+                    <tr data-raw="{{ row | tojson | forceescape }}">
+                    <th scope="row">{{ row['id'] }}</th>
+                    <td><a href="{{ url_for('.lottery', _id=row['id']) }}">{{ row['name'] }}</a></td>
+                    <td>{{ row['src'] }}</td>
+                    <td>{{ row['winners_count'] }} / {{ row['total'] }}</td>
+                    <td>{{ row['batch'] }}</td>
+                    <td>
+                        <a href="{{ url_for('.lottery', _id=row['id']) }}" class="btn btn-sm btn-success">抽奖</a>
+                        <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#editModel">编辑</button>
+                        <button class="btn btn-sm btn-danger btn-del">删除</button>
+                    </td>
+                    </tr>
+                    {%- endfor %}
+                </tbody>
+            </table>
+        </p>
+    </div>
+    
+    <div class="modal fade" id="editModel" tabindex="-1" role="dialog" aria-labelledby="editModelLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModelLabel">编辑/新增</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('.save') }}">
+                    <div class="form-group">
+                        <label for="form-name" class="col-form-label">奖品名称:</label>
+                        <input type="text" class="form-control" id="form-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="form-desc" class="col-form-label">奖品描述:</label>
+                        <textarea class="form-control" id="form-desc" name="desc"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col col-6">
+                            <div class="form-group">
+                                <label for="form-total" class="col-form-label">奖品数量:</label>
+                                <input type="number" min=1 step="1" class="form-control" id="form-total" name="total" required>
+                            </div>
+                        </div>
+                        <div class="col col-6">
+                            <div class="form-group">
+                                <label for="form-src" class="col-form-label">奖品来源:</label>
+                                <input type="text" class="form-control" id="form-src" name="src">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col col-6">
+                            <div class="form-group">
+                                <label for="form-batch" class="col-form-label">单次抽奖数量:</label>
+                                <input type="number" min=1 step="1" class="form-control" id="form-batch" name="batch" value="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="form-id" name="id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="form-save">保存</button>
+            </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+    <script>
+    $('#editModel').on('show.bs.modal', function (e) {
+        let data = $(e.relatedTarget).parents('tr').data('raw');
+        if (!data) {
+            $('#form-id').val('');
+            $('#form-name').val('');
+            $('#form-desc').val('');
+            $('#form-total').val(1);
+            $('#form-src').val('');
+            $('#form-batch').val(1);
+            return;
+        }
+
+        $('#form-id').val(data['id']);
+        $('#form-name').val(data['name']);
+        $('#form-desc').val(data['desc']);
+        $('#form-total').val(data['total']);
+        $('#form-src').val(data['src']);
+        $('#form-batch').val(data['batch']);
+    }).on('click', '#form-save', function(e) {
+        $('#editModel').find('form').submit();
+    })
+    $(".btn-del").click(function() {
+        let $ele = $(this).parents('tr'), data=$ele.data('raw');
+        if (!confirm(`确定删除奖品 #${data.id}【${data.name}】?`)) {
+            return;
+        }
+        let form = new FormData();
+        form.append('id', data.id);
+        form.append('name', data.name);
+
+        fetch("{{ url_for('.del_gift') }}", {
+            method: 'DELETE',
+            cache: 'no-cache',
+            body: form
+        }).then(resp=>resp.json()).then(data=>{
+            if (data.suc) {
+                $ele.remove();
+            } else {
+                alert('删除失败');
+            }
+        }).catch(err=>{
+            alert(err);
+        })
+    })
+    </script>
+{% endblock %}

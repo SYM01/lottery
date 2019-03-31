@@ -1,0 +1,267 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Lottery</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <style>
+    #matrix-canvas {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: -1;
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+    #main {
+        color: white;
+        text-align: center;
+        margin-top: 12vh;
+        text-shadow: 0 0 1em #000;
+    }
+    h1 {
+        font-size: 9vh;
+    }
+    #navbar {
+        font-size: 18px;
+        line-height: 40px;
+        vertical-align: middle;
+        padding: .2em 1em;
+        transition: all 1s ease-out;
+    }
+    #navbar svg {
+        height: 18px;
+        margin-top: -2px;
+    }
+    #navbar a {
+        color: #AFA;
+        font-weight: bold;
+        margin-right: 1em;
+        transition: all 1s ease-out;
+    }
+    #navbar a:hover {
+        text-decoration: none;
+        color: #FFF;
+    }
+    #navbar .extra {
+        display: none;
+    }
+    #navbar:hover .extra {
+        display: inline;
+    }
+    #logo {
+        display: block;
+        position: absolute;
+        height: 8vh;
+        right: 2vw;
+        top: 2vh;
+    }
+    #desc, #amount, #new-winner, #winners {
+        font-size: 3vh;
+        /* color: #0F0; */
+    }
+    #new-winner {
+        display: inline-block;
+        padding: .1vh 2vh;
+        border: .2vh solid #FFF;
+        border-radius: 1vh;
+        margin-left: 3vh;
+        cursor: pointer;
+    }
+    #status {
+        padding: 1vh 0;
+        font-size: 9vh;
+    }
+    #status span{
+        margin: 0 .4em;
+        display: inline-block;
+    }
+    #winners {
+        margin: 2vh;
+        font-size: 4vh;
+    }
+    #winners span {
+        margin: .5em;
+    }
+    h2 {
+        text-align: center;
+        font-size: 3vh;
+        top: -1.5vh;
+        color: #0F0;
+        display: inline-block;
+        background-color: #FFFFFF5A;
+        padding: .5vh 2vh;
+        margin-top: 2vh;
+        border: 0.1vh solid #0F0;
+        border-radius: 1vh;
+    }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-canvas"></canvas>
+    <div id="navbar">
+        <a href="{{ url_for('.index') }}">
+            <svg xmlns='http://www.w3.org/2000/svg' fill='#0F0' viewBox='0 0 8 8'>
+                <path d='M5.25 0l-4 4 4 4 1.5-1.5-2.5-2.5 2.5-2.5-1.5-1.5z'/>
+            </svg>
+            返回
+        </a>
+        {%- for row in recommends %}
+        <a href="{{ url_for('.lottery', _id=row.id) }}" class="extra">{{ row.name }}</a>
+        {%- endfor %}
+    </div>
+    <img src="{{ url_for('static', filename='logo.svg') }}" id="logo">
+    <div id="main">
+        <h1>{{ data.name }}</h1>
+        <p id="desc">
+            {{ data.desc }}
+            {%- if data.src | length > 0 %}
+            &nbsp;来源: {{ data.src }}
+            {%- endif %}
+        </p>
+        <div>
+            数量: <span id="amount">{{ data.winners | length }}/{{ data.total }}</span>
+            <span id="new-winner">抽奖</span>
+        </div>
+        <p id="status"></p>
+        <h2>中奖名单</h2>
+        <div id="winners">
+            {%- for name in data.winners %}
+            <span>{{ name }}</span>
+            {%- endfor %}
+        </div>
+    </div>
+    <script>
+        // stolen from https://code.sololearn.com/Wj7ZWBg5m2OG
+        var c = document.getElementById('matrix-canvas');
+        c.width = window.innerWidth;
+        c.height = window.innerHeight;
+        var ctx = c.getContext("2d");
+
+        var matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%".split("")
+        var font_size = 10;
+        var columns = c.width / font_size; //number of columns for the rain
+        var rows = c.height / font_size;
+        //an array of drops - one per column
+        var drops = [];
+
+        for(var x = 0; x < columns; x++)
+            drops[x] = - Math.floor(Math.random() * rows); 
+
+        //drawing the characters
+        function draw()
+        {
+            //Black BG for the canvas
+            //translucent BG to show trail
+            ctx.fillStyle = "rgba(0, 0, 0, 0.04)";
+            ctx.fillRect(0, 0, c.width, c.height);
+
+            ctx.fillStyle = "#0F0"; //green text
+            ctx.font = font_size + "px arial";
+            //looping over drops
+            for( var i = 0; i < drops.length; drops[i]++, i++ )
+            {
+                if (drops[i] < 1) continue;
+                var text = matrix[ Math.floor( Math.random() * matrix.length ) ];
+                ctx.fillText(text, i * font_size, drops[i] * font_size);
+
+                if( drops[i] * font_size > c.height && Math.random() > 0.975 )
+                    drops[i] = 0;
+            }
+        }
+
+        setInterval(draw, 35);
+
+        // starts here
+        const newWinnerEle = document.getElementById('new-winner'),
+            statusEle = document.getElementById('status');
+        newWinnerEle.addEventListener('click', newWinner);
+
+        function updateInfo(data) {
+            if (data.winners.length >= data.total || data.candidates.length == 0) {
+                newWinnerEle.parentElement.removeChild(newWinnerEle);
+            }
+            document.getElementById('amount').innerText = `${ data.winners.length }/${ data.total }`;
+            let winnersEle = document.getElementById('winners');
+
+            winnersEle.innerHTML = '';
+            for (let winner of data.winners) {
+                let s = document.createElement('span');
+                s.innerText = winner;
+                winnersEle.appendChild(s)
+            }
+        }
+
+        function newWinner() {
+            if (newWinnerEle.running) {
+                return
+            }
+            newWinnerEle.running = true;
+            let oldText = newWinnerEle.innerHTML;
+            newWinnerEle.innerHTML = '等待中...';
+
+            fetch("{{ url_for('lottery_check', _id=data.id) }}", {
+                method: 'GET', 
+                cache: 'no-cache'
+            }).then(resp=>resp.json()).then(data=>{
+                updateInfo(data);
+                if (data.winners.length >= data.total) return;
+                if (data.candidates.length == 0) return alert('候选人不足，无法抽奖')
+                const batch = Math.min(data.batch, (data.total - data.winners.length), data.candidates.length);
+                let names = [];
+                let t = setInterval(()=>{
+                    names = [];
+                    let remains = batch;
+                    for (let base=data.candidates.length, i=0; base > 0; --base, ++i) {
+                        if (Math.random() < remains/base) {
+                            --remains;
+                            names.push(data.candidates[i])
+                        }
+                    }
+                    statusEle.innerHTML = '';
+                    names.map(n=>{
+                        let el=document.createElement('span');
+                        el.innerText=n;
+                        statusEle.appendChild(el);
+                    });
+                }, 35);
+                let choose = ()=>{
+                    newWinnerEle.removeEventListener('click', choose);
+                    clearInterval(t);
+                    newWinnerEle.innerHTML = '等待中...';
+                    confirmWinner(names, oldText);
+                }
+                newWinnerEle.addEventListener('click', choose);
+                newWinnerEle.innerHTML = '选中'
+            }).catch(err=>{
+                alert(err);
+                newWinnerEle.running = false;
+                newWinnerEle.innerHTML = oldText;
+            })
+        }
+
+        function confirmWinner(names, oldText) {
+            fetch("{{ url_for('.lottery_confirm', _id=data.id) }}", {
+                method: 'POST', 
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(names)
+            }).then(resp=>resp.json()).then(data=>{
+                updateInfo(data)
+                newWinnerEle.running = false;
+                newWinnerEle.innerHTML = oldText;
+            }).catch(err=>{
+                alert(err);
+                newWinnerEle.running = false;
+                newWinnerEle.innerHTML = oldText;
+            })
+        }
+    </script>
+</body>
+</html>

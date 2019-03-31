@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+        {%- for row in data %}
+        <div class="card text-center mt-2">
+            <div class="card-header">
+                <h3>{{ row.name }}</h3>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ row.desc }}</h5>
+                <h5 class="card-subtitle mb-2">
+                    {%- if row.src | length > 0 %}
+                    来源： <span class="badge badge-primary mr-4">{{ row.src }}</span>
+                    {%- endif %}
+                    数量： <span class="badge badge-primary">{{ row.total }}</span>
+                </h5>
+                <h2>
+                    {%- for name in row.winners %}
+                    <span class="badge badge-light">{{ name }}</span>
+                    {%- endfor %}
+                </h2>
+            </div>
+        </div>
+        {%- endfor %}
+    </div>
+{% endblock %}
